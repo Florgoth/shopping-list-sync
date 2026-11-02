@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Suivi de mes achats en ligne</title>
+<style>
+:root{--bg:#f6f5f2;--card:#fff;--tx:#1d1d1b;--mut:#6b6b66;--bd:#e2e0da;--ac:#2f6fed;--ok:#1f8a4c;--warn:#b7791f;--bad:#c53030;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#161615;--card:#212120;--tx:#ececea;--mut:#9a9a94;--bd:#37372f;--ac:#6c9bff;--ok:#4cc27f;--warn:#e0a94a;--bad:#ef7676}}
+:root[data-theme="dark"]{--bg:#161615;--card:#212120;--tx:#ececea;--mut:#9a9a94;--bd:#37372f;--ac:#6c9bff;--ok:#4cc27f;--warn:#e0a94a;--bad:#ef7676}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:1000px;margin:0 auto;padding:20px 14px 40px}
+h1{font-size:22px;margin:0 0 4px}
+.sub{color:var(--mut);font-size:12.5px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px;margin:14px 0}
+form{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;align-items:end}
+label{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--mut)}
+input,select,button{font:inherit;color:var(--tx);background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:7px 9px;min-width:0}
+button{cursor:pointer}
+button.pri{background:var(--ac);border-color:var(--ac);color:#fff;font-weight:600}
+button.sm{padding:3px 8px;font-size:12.5px}
+button.danger{color:var(--bad)}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin:6px 0}
+.tabs{display:flex;gap:6px}
+.tabs button.on{background:var(--ac);border-color:var(--ac);color:#fff}
+.wrap{overflow-x:auto;max-width:100%}
+table{width:100%;border-collapse:collapse;min-width:720px}
+th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--bd);vertical-align:top}
+th{font-size:12px;color:var(--mut);font-weight:600}
+td.amt{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+tr.done td:not(:first-child):not(:last-child){opacity:.55}
+tr.done .item{text-decoration:line-through}
+input[type=checkbox]{width:18px;height:18px;accent-color:var(--ok)}
+.badge{display:inline-block;padding:1px 9px;border-radius:99px;font-size:12px;font-weight:600;border:1px solid currentColor}
+.s0{color:var(--mut)}.s1,.s2,.s3{color:var(--warn)}.s4{color:var(--ok)}.s5{color:var(--bad)}
+details{margin-top:6px}summary{cursor:pointer;font-size:12.5px;color:var(--ac)}
+.upd{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+.hist{margin:6px 0 0;padding-left:16px;font-size:12.5px;color:var(--mut)}
+.empty{text-align:center;color:var(--mut);padding:26px 0}
+.acts{display:flex;flex-direction:column;gap:5px;align-items:flex-start}
+.auth-screen{display:none;text-align:center;padding:40px 20px}
+.auth-screen.show{display:block}
+.auth-screen h2{font-size:28px;margin:20px 0}
+.auth-form{max-width:300px;margin:30px auto;display:flex;flex-direction:column;gap:12px}
+.auth-form input{padding:10px;border:1px solid var(--bd);border-radius:8px}
+.auth-form button{padding:10px;background:var(--ac);color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:600}
+.auth-form button:hover{opacity:0.9}
+.auth-toggle{text-align:center;margin-top:15px;font-size:14px;color:var(--mut)}
+.auth-toggle button{background:none;border:none;color:var(--ac);cursor:pointer;text-decoration:underline;padding:0}
+.user-info{display:flex;justify-content:space-between;align-items:center;margin:10px 0;padding:10px;background:var(--card);border:1px solid var(--bd);border-radius:8px}
+.error-msg{color:var(--bad);font-size:12px;margin-top:8px;padding:8px;background:#ffebee;border-radius:4px}
+</style>
+</head>
+<body>
+
+<!-- AUTH SCREEN -->
+<div id="authScreen" class="auth-screen show">
+  <div class="card" style="max-width:400px;margin:100px auto">
+    <h2 id="authTitle">Connexion</h2>
+    <div class="auth-form">
+      <input type="email" id="authEmail" placeholder="Votre email">
+      <input type="password" id="authPassword" placeholder="Mot de passe">
+      <button id="authSubmit">Se connecter</button>
+      <div id="authError" class="error-msg" style="display:none"></div>
+    </div>
+    <div class="auth-toggle">
+      <span id="toggleText">Pas de compte? </span>
+      <button id="toggleMode">Créer un compte</button>
+    </div>
+  </div>
+</div>
+
+<!-- APP SCREEN -->
+<main id="appScreen" style="display:none">
+<div class="user-info">
+  <div><strong>Connecté:</strong> <span id="userEmail"></span></div>
+  <button class="sm" id="logoutBtn">Déconnexion</button>
+</div>
+
+<h1>📦 Suivi de mes achats en ligne <span id="sync" style="margin-left:8px;display:inline-block;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:600;background:#fff3e0;color:#f57c00">Synchronisation...</span></h1>
+<div class="sub" id="syncDetail">Connexion à Supabase...</div>
+
+<section class="card">
+<form id="f">
+<label>Magasin<input name="store" required="" placeholder="Amazon, Canyon…"></label>
+<label>Article<input name="item" required="" placeholder="Ce que j'ai commandé"></label>
+<label>Date d'achat<input name="date" type="date" required=""></label>
+<label>Montant ($)<input name="amount" type="number" step="0.01" min="0" required=""></label>
+<label>No de suivi (optionnel)<input name="tracking"></label>
+<label>Statut<select name="status"><option>Commandé</option><option>Expédié</option><option>En transit</option><option>En livraison</option><option>Livré</option><option>Retourné</option></select></label>
+<button class="pri" type="submit">Ajouter</button>
+</form>
+</section>
+
+<div class="bar">
+<div class="tabs"><button id="tA" class="on">Actives</button><button id="tB" class="">Archivées</button></div>
+<div><span class="sub" id="tot">0 commandes · 0,00 $</span> <button class="sm" id="arcDone" style="">Archiver les finalisées</button></div>
+</div>
+
+<div class="card wrap" style="padding:4px 10px">
+<table>
+<thead><tr><th></th><th>Date</th><th>Magasin</th><th>Article</th><th style="text-align:right">Montant</th><th>Livraison</th><th></th></tr></thead>
+<tbody id="rows"><tr><td colspan="7" class="empty">Chargement...</td></tr></tbody>
+</table>
+</div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// ============ CONFIG ============
+const SUPABASE_URL = "https://nvxbnynkuezzsimffueo.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im52eGJueW5rdWV6enNpbWZmdWVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA5MTk1ODAsImV4cCI6MjEwNjQ5NTU4MH0.fI0golCeSqa4F3MIy_neFnTnh1Sb9WYg8SbsVYv8oiQ";
+
+let supabaseClient = null;
+let currentUser = null;
+let orders = [];
+let view = "active";
+let armed = null;
+
+const STATUS = ["Commandé","Expédié","En transit","En livraison","Livré","Retourné"];
+const $ = s => document.querySelector(s);
+const esc = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const today = () => new Date().toLocaleDateString("en-CA");
+const fmtD = d => d ? new Date(d+"T00:00").toLocaleDateString("fr-CA",{day:"numeric",month:"short",year:"numeric"}) : "";
+const money = n => new Intl.NumberFormat("fr-CA",{style:"currency",currency:"CAD"}).format(n||0);
+const uid = () => Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+
+// ============ AUTH ============
+let isSignUp = false;
+
+$("#toggleMode").addEventListener("click", () => {
+  isSignUp = !isSignUp;
+  $("#authTitle").textContent = isSignUp ? "Créer un compte" : "Connexion";
+  $("#toggleText").textContent = isSignUp ? "Déjà un compte? " : "Pas de compte? ";
+  $("#toggleMode").textContent = isSignUp ? "Se connecter" : "Créer un compte";
+  $("#authError").style.display = "none";
+});
+
+$("#authSubmit").addEventListener("click", async () => {
+  const email = $("#authEmail").value.trim();
+  const password = $("#authPassword").value;
+  const errorEl = $("#authError");
+  
+  if (!email || !password) {
+    errorEl.textContent = "Remplissez tous les champs";
+    errorEl.style.display = "block";
+    return;
+  }
+  
+  try {
+    if (isSignUp) {
+      const { data, error } = await supabaseClient.auth.signUp({ email, password });
+      if (error) throw error;
+      errorEl.textContent = "Compte créé! Vérifiez votre email pour confirmer.";
+      errorEl.style.color = "#2e7d32";
+      errorEl.style.background = "#e8f5e9";
+      errorEl.style.display = "block";
+    } else {
+      const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+    }
+  } catch (e) {
+    errorEl.textContent = e.message || "Erreur d'authentification";
+    errorEl.style.color = "#c62828";
+    errorEl.style.background = "#ffebee";
+    errorEl.style.display = "block";
+  }
+});
+
+$("#logoutBtn").addEventListener("click", async () => {
+  await supabaseClient.auth.signOut();
+});
+
+// ============ SYNC ============
+async function loadOrders() {
+  if (!currentUser) return;
+  
+  try {
+    const { data, error } = await supabaseClient
+      .from('orders')
+      .select('*')
+      .eq('user_id', currentUser.id)
+      .order('date', { ascending: false });
+    
+    if (error) throw error;
+    orders = (data || []).map(row => ({
+      id: row.id,
+      store: row.store,
+      item: row.item,
+      date: row.date,
+      amount: row.amount,
+      tracking: row.tracking,
+      status: row.status,
+      history: row.history || [],
+      done: row.done || false,
+      archived: row.archived || false
+    }));
+    
+    render();
+  } catch (e) {
+    console.error("Load error:", e);
+  }
+}
+
+async function saveOrder(order) {
+  if (!currentUser) return;
+  
+  try {
+    const { error } = await supabaseClient
+      .from('orders')
+      .upsert({
+        id: order.id,
+        user_id: currentUser.id,
+        store: order.store,
+        item: order.item,
+        date: order.date,
+        amount: order.amount,
+        tracking: order.tracking,
+        status: order.status,
+        history: order.history,
+        done: order.done,
+        archived: order.archived
+      }, { onConflict: 'id' });
+    
+    if (error) throw error;
+  } catch (e) {
+    console.error("Save error:", e);
+  }
+}
+
+async function deleteOrder(orderId) {
+  if (!currentUser) return;
+  
+  try {
+    const { error } = await supabaseClient
+      .from('orders')
+      .delete()
+      .eq('id', orderId)
+      .eq('user_id', currentUser.id);
+    
+    if (error) throw error;
+  } catch (e) {
+    console.error("Delete error:", e);
+  }
+}
+
+// ============ RENDERING ============
+function render() {
+  const list = orders.filter(o => !!o.archived === (view === "arch")).sort((a,b) => new Date(b.date) - new Date(a.date));
+  $("#tA").className = view === "active" ? "on" : "";
+  $("#tB").className = view === "arch" ? "on" : "";
+  $("#arcDone").style.display = view === "active" ? "" : "none";
+  $("#tot").textContent = list.length + " commande" + (list.length > 1 ? "s" : "") + " · " + money(list.reduce((t,o) => t + (+o.amount||0), 0));
+  
+  if (!list.length) {
+    $("#rows").innerHTML = `<tr><td colspan="7" class="empty">${view==="active"?"Aucune commande pour l'instant. Ajoutes-en une ci-dessus.":"Aucune commande archivée."}</td></tr>`;
+    return;
+  }
+  
+  $("#rows").innerHTML = list.map(o => {
+    const si = Math.max(0, STATUS.indexOf(o.status));
+    const last = o.history[o.history.length - 1];
+    return `<tr class="${o.done?"done":""}" data-id="${o.id}">
+<td><input type="checkbox" data-act="done" ${o.done?"checked":""} title="Finaliser"></td>
+<td>${fmtD(o.date)}</td><td>${esc(o.store)}</td>
+<td><span class="item">${esc(o.item)}</span>${o.tracking?`<div class="sub">Suivi : ${esc(o.tracking)}</div>`:""}</td>
+<td class="amt">${money(o.amount)}</td>
+<td><span class="badge s${si}">${esc(o.status)}</span>
+${last?`<div class="sub">${fmtD(last.d)}${last.note?" · "+esc(last.note):""}</div>`:""}
+<details><summary>Mise à jour</summary>
+<div class="upd"><select class="us">${STATUS.map(s=>`<option ${s===o.status?"selected":""}>${s}</option>`).join("")}</select>
+<input class="un" placeholder="Note (ex. : colis à Montréal)"><button class="sm" data-act="upd">Ajouter</button></div>
+<ul class="hist">${o.history.slice().reverse().map(h=>`<li>${fmtD(h.d)} — ${esc(h.status)}${h.note?" : "+esc(h.note):""}</li>`).join("")}</ul></details></td>
+<td><div class="acts">${o.archived?`<button class="sm" data-act="restore">Restaurer</button>`:`<button class="sm" data-act="arch">Archiver</button>`}
+<button class="sm danger" data-act="del">${armed===o.id?"Confirmer ?":"Supprimer"}</button></div></td></tr>`}).join("");
+}
+
+// ============ EVENTS ============
+$("#f").addEventListener("submit", e => {
+  e.preventDefault();
+  const f = Object.fromEntries(new FormData(e.target));
+  const newOrder = {
+    id: uid(),
+    store: f.store.trim(),
+    item: f.item.trim(),
+    date: f.date,
+    amount: parseFloat(f.amount) || 0,
+    tracking: f.tracking.trim(),
+    status: f.status,
+    history: [{d: f.date, status: f.status, note: "Commande ajoutée"}],
+    done: false,
+    archived: false
+  };
+  
+  orders.push(newOrder);
+  saveOrder(newOrder);
+  
+  e.target.reset();
+  document.querySelector("[name=date]").value = today();
+  view = "active";
+  render();
+});
+
+$("#rows").addEventListener("click", e => {
+  const b = e.target.closest("[data-act]");
+  if (!b) return;
+  const tr = b.closest("tr");
+  const o = orders.find(x => x.id === tr.dataset.id);
+  if (!o) return;
+  const a = b.dataset.act;
+  
+  if (a === "done") o.done = b.checked;
+  else if (a === "arch") o.archived = true;
+  else if (a === "restore") o.archived = false;
+  else if (a === "del") {
+    if (armed !== o.id) {
+      armed = o.id;
+      render();
+      setTimeout(() => {if(armed === o.id) {armed = null; render()}}, 3000);
+      return;
+    }
+    deleteOrder(o.id);
+    orders = orders.filter(x => x.id !== o.id);
+    armed = null;
+  } else if (a === "upd") {
+    const st = tr.querySelector(".us").value;
+    const note = tr.querySelector(".un").value.trim();
+    o.status = st;
+    o.history = o.history || [];
+    o.history.push({d: today(), status: st, note});
+  }
+  
+  saveOrder(o);
+  render();
+});
+
+$("#tA").onclick = () => {view = "active"; render()};
+$("#tB").onclick = () => {view = "arch"; render()};
+$("#arcDone").onclick = () => {
+  orders.forEach(o => {
+    if (o.done && !o.archived) {
+      o.archived = true;
+      saveOrder(o);
+    }
+  });
+  render();
+};
+
+// ============ INIT ============
+document.querySelector("[name=status]").innerHTML = STATUS.map(s => `<option>${s}</option>`).join("");
+document.querySelector("[name=date]").value = today();
+
+async function init() {
+  if (SUPABASE_URL.includes("YOUR_PROJECT")) {
+    $("#authError").textContent = "⚠️ Configure Supabase d'abord";
+    return;
+  }
+  
+  try {
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    
+    // Check if user is logged in
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    
+    if (session) {
+      currentUser = session.user;
+      showApp();
+      await loadOrders();
+    }
+    
+    // Listen for auth changes
+    supabaseClient.auth.onAuthStateChange(async (event, session) => {
+      if (session) {
+        currentUser = session.user;
+        $("#userEmail").textContent = currentUser.email;
+        showApp();
+        await loadOrders();
+        
+        // Set up real-time listener
+        supabaseClient
+          .channel('orders-' + currentUser.id)
+          .on('postgres_changes', {
+            event: '*',
+            schema: 'public',
+            table: 'orders',
+            filter: 'user_id=eq.' + currentUser.id
+          }, () => {
+            loadOrders();
+          })
+          .subscribe();
+      } else {
+        currentUser = null;
+        showAuth();
+      }
+    });
+    
+  } catch (e) {
+    console.error("Init error:", e);
+  }
+}
+
+function showAuth() {
+  $("#authScreen").classList.add("show");
+  $("#appScreen").style.display = "none";
+}
+
+function showApp() {
+  $("#authScreen").classList.remove("show");
+  $("#appScreen").style.display = "block";
+}
+
+init();
+</script>
+</body>
+</html>
